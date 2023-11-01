@@ -1,130 +1,116 @@
-class ConnectFour {
-  private board: string[][];
-  private turn: "red" | "yellow" = "red";
-  constructor() {
-    this.board = new Array(7);
-    for (let i = 0; i < this.board.length; i++) {
-      this.board[i] = new Array(6).fill("");
-    }
-    return this;
+class Chip {
+  u: Chip | null = null;
+  d: Chip | null = null;
+  l: Chip | null = null;
+  r: Chip | null = null;
+  ur: Chip | null = null;
+  ul: Chip | null = null;
+  dl: Chip | null = null;
+  dr: Chip | null = null;
+  constructor(
+    public row: number,
+    public col: number,
+    public rows: number,
+    public cols: number,
+    public board: Chip[][],
+    public player: string | null = null
+  ) {}
+  setPlayer(player: string) {
+    this.player = player;
   }
 
-  takeTurn(column: number): boolean {
-    /**
-     * Return an object that has {
-     * valid: boolean;
-     * winningMove?: boolean;
-     * errorMessage?: string;
-     * }
-     * Red starts and uses a turn
-     * A turn consists of placing a chip in the board
-     * which means choosing a column to place the chip in
-     * chip falls down to the lowest possible level
-     * we do some check board state function to determine if there is a winner
-     */
-    // return checkBoardState
-    // if (column < 0 || column  > 7) {
-    // }
-    let i = this.board[column].length - 1;
-    while (this.board[column][i] !== "" && i > 0) {
-      i--;
-    }
-    this.board[column][i] = this.turn;
-    console.log(this.board);
-    // this.turn = this.turn === "red" ? "yellow" : "red";
-    return this.checkBoardState(column, i);
+  private setInnerNeighbors() {
+    this.u = this.board[this.row - 1][this.col];
+    this.d = this.board[this.row + 1][this.col];
+    this.l = this.board[this.row][this.col - 1];
+    this.r = this.board[this.row][this.col + 1];
+    this.ur = this.board[this.row - 1][this.col + 1];
+    this.ul = this.board[this.row - 1][this.col - 1];
+    this.dl = this.board[this.row + 1][this.col - 1];
+    this.dr = this.board[this.row - 1][this.col + 1];
   }
 
-  checkBoardState(column: number, row: number): boolean {
-    let longestChain = 1;
-    for (let i = row + 1; i <= this.board[column].length - 1; i++) {
-      if (this.board[column][i] === this.turn) {
-        longestChain++;
-      } else {
-        break;
+  // Because we're 0 indexing the up and down rows are flipped.  This is so that my brain can manage which cell is where considering a 2d board
+  setNeighbors() {
+    // set if inner neighbor
+    if (this.row > 0 && this.row < this.rows - 1) {
+      if (this.col > 0 && this.col < this.cols - 1) {
+        this.setInnerNeighbors();
       }
-    }
-    for (let i = row - 1; i >= 0; i--) {
-      if (this.board[column][i] === this.turn) {
-        longestChain++;
-      } else {
-        break;
+      // set the edges that aren't corners
+    } else if (
+      // set rows 0 and 5
+      (this.col !== 0 && this.col !== this.cols - 1 && this.row === 0) ||
+      this.row === this.rows - 1
+    ) {
+      this.r = this.board[this.row][this.col + 1];
+      this.l = this.board[this.row][this.col - 1];
+      if (this.row === 0) {
+        this.dr = this.board[this.row + 1][(this.col = 1)];
+        this.d = this.board[this.row + 1][this.col];
+        this.dr = this.board[this.row + 1][this.col + 1];
+      } else if (this.row === this.rows - 1) {
+        this.ul = this.board[this.rows - 1][this.cols - 1];
+        this.u = this.board[this.rows - 1][this.cols];
+        this.ur = this.board[this.rows - 1][this.cols + 1];
       }
-    }
-
-    if (longestChain >= 4) {
-      return true;
-    } else {
-      longestChain = 1;
-    }
-
-    // check rows
-    for (let i = column + 1; i <= this.board.length - 1; i++) {
-      if (this.board[i][row] === this.turn) {
-        longestChain++;
-      } else {
-        break;
+    } else if (
+      // set cols 0 and 6
+      this.row !== 0 &&
+      this.row !== this.rows - 1 &&
+      (this.col === 0 || this.col === this.cols - 1)
+    ) {
+      this.u = this.board[this.rows - 1][this.col];
+      this.d = this.board[this.rows + 1][this.col];
+      if (this.col === 0) {
+        this.ur = this.board[this.row - 1][this.col + 1];
+        this.r = this.board[this.row][this.col + 1];
+        this.dr = this.board[this.row - 1][this.col + 1];
+      } else if (this.col === this.cols - 1) {
+        this.l = this.board[this.row][this.col - 1];
+        this.ul = this.board[this.row - 1][this.col - 1];
+        this.dl = this.board[this.row + 1][this.col - 1];
       }
-    }
-
-    for (let i = column - 1; i >= 0; i--) {
-      if (this.board[i][row] === this.turn) {
-        longestChain++;
-      } else {
-        break;
+      // set corners
+    } else if (this.row === 0) {
+      this.d = this.board[this.row + 1][this.col];
+      if (this.col === 0) {
+        this.r = this.board[this.row][this.col + 1];
+        this.dr = this.board[this.row - 1][this.col + 1];
+      } else if (this.col === this.cols - 1) {
+        this.l = this.board[this.row][this.col - 1];
+        this.dl = this.board[this.row + 1][this.col - 1];
+        this.d = this.board[this.rows + 1][this.col];
       }
-    }
-
-    // console.log({ longestChain });
-    if (longestChain >= 4) {
-      return true;
-    } else {
-      longestChain = 1;
-    }
-
-    // upwards
-    for (let i = column + 1, j = row - 1; j >= 0 && i <= this.board.length; i++, j--) {
-      if ()
-    }
-    /**
-     * At 1,1
-     * Check 0,0
-     * Check 0,2
-     * Check 2,0
-     * Check 2,2
-     * column <= array[i]
-     * row <= array.length
-     * ["","","","","",""] 
-     * ["","","","","",""]
-     * ["","","","","",""]
-     * ["","","","","",""]
-     * ["","","","","",""]
-     * ["","","","","",""]
-     * ["","","","","",""]
-     * 
-     */
-    return false;
-  }
-
-  reset() {
-    for (const column of this.board) {
-      for (let row of column) {
-        row = "";
+    } else if (this.row === this.rows - 1) {
+      this.u = this.board[this.rows - 1][this.col];
+      if (this.col === 0) {
+        this.ur = this.board[this.row - 1][this.col + 1];
+        this.r = this.board[this.row][this.col + 1];
+      } else if (this.col === this.cols - 1) {
+        this.ul = this.board[this.row - 1][this.col - 1];
+        this.l = this.board[this.row][this.col - 1];
       }
     }
   }
 }
 
-const main = () => {
-  const connectFour = new ConnectFour();
-  // for (let i = 0; i < 4; i++) {
-  connectFour.takeTurn(0);
-  connectFour.takeTurn(1);
-  connectFour.takeTurn(2);
-  connectFour.takeTurn(3);
-
-  // }
-  // connectFour.takeTurn(6);
-};
-
-main();
+class ConnectFour {
+  ROWS = 6;
+  COLS = 7;
+  board: Chip[][];
+  constructor(rows: number, cols: number) {
+    this.board = new Array(rows);
+    for (let row = 0; row < rows - 1; row++) {
+      this.board[0] = new Array(cols);
+      for (let col = 0; col < cols - 1; col++) {
+        this.board[row].push(new Chip(row, col, rows, cols, this.board, null));
+      }
+    }
+    for (const row of this.board) {
+      for (const chip of row) {
+        chip.setNeighbors();
+      }
+    }
+  }
+}
